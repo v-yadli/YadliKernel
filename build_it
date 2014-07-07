@@ -1,0 +1,23 @@
+### GCC 4.9.x
+
+### compile kernel
+ARCH=arm CROSS_COMPILE=~/arm-cortex_a15-linux-gnueabihf-linaro_4.9.1-2014.04/bin/arm-gnueabi- make -j8
+
+echo "checking for compiled kernel..."
+if [ -f arch/arm/boot/zImage ]
+then
+
+echo "generating device tree..."
+./dtbToolCM --force-v2 -o ../final_files/dt.img -s 2048 -p ./scripts/dtc/ ./arch/arm/boot/
+
+### copy zImage
+cp arch/arm/boot/zImage ../final_files/.
+
+### Creating boot.img
+./mkbootimg --base 0x00000000 --kernel ../final_files/zImage --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline "androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y" --ramdisk ../final_files/ramdisk.cpio.gz --dt ../final_files/dt.img -o ../final_files/boot.img
+
+cp ../final_files/boot.img /media/psf/Home/
+
+echo "DONE"
+
+fi
