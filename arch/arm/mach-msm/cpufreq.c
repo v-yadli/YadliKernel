@@ -54,6 +54,8 @@ static bool is_clk;
 static bool is_sync;
 static unsigned long *mem_bw;
 
+static unsigned int freq_limit_max;
+
 struct cpufreq_work_struct {
 	struct work_struct work;
 	struct cpufreq_policy *policy;
@@ -116,6 +118,14 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq,
 	int saved_sched_rt_prio = -EINVAL;
 	struct cpufreq_freqs freqs;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+
+    if (policy->cpu == 0) {
+        // update freq_limit_max
+        freq_limit_max = policy->max;
+    }
+
+    if (new_freq > freq_limit_max)
+        new_freq = freq_limit_max;
 
 	freqs.old = policy->cur;
 	freqs.new = new_freq;
@@ -574,6 +584,8 @@ static int __init msm_cpufreq_probe(struct platform_device *pdev)
 		&msm_cpufreq_fops))
 		return -ENOMEM;
 #endif
+
+    freq_limit_max = 0;
 
 	return 0;
 }
