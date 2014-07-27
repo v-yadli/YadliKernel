@@ -1,7 +1,12 @@
 ### GCC 4.9.x
 
+### remove old zImage
+rm arch/arm/boot/zImage
+
 ### compile kernel
 ARCH=arm CROSS_COMPILE=~/arm-cortex_a15-linux-gnueabihf-linaro_4.9.1-2014.04/bin/arm-gnueabi- make -j8
+#If section mismatch, use this:
+#ARCH=arm CROSS_COMPILE=~/arm-cortex_a15-linux-gnueabihf-linaro_4.9.1-2014.04/bin/arm-gnueabi- make CONFIG_DEBUG_SECTION_MISMATCH=y -j8
 
 echo "checking for compiled kernel..."
 if [ -f arch/arm/boot/zImage ]

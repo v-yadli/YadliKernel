@@ -3057,7 +3057,7 @@ static ssize_t rgbcommon_start_blink_store(struct device *dev,
     int* duty_pkt_ptr;
     int j,k;
 
-    dev_info(dev, "In rgbcommon_start_blink_store");
+    //dev_info(dev, "In rgbcommon_start_blink_store");
 
 	rgb_sync = container_of(led_cdev, struct rgb_sync, cdev);
 	if (!rgb_sync) {

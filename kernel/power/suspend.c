@@ -254,6 +254,7 @@ int suspend_devices_and_enter(suspend_state_t state)
  * Call platform code to clean up, restart processes, and free the console that
  * we've allocated. This routine is not called for hibernation.
  */
+
 static void suspend_finish(void)
 {
 	suspend_thaw_processes();

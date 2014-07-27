@@ -1308,6 +1308,7 @@ static int _pwm_config_lut(struct pwm_device *pwm,
 
 	lut_config->ramp_step_ms = QPNP_GET_RAMP_STEP_DURATION(ramp_step_ms);
 
+    /*
     dev_info(&pwm->chip->spmi_dev->dev, "%s, hi_cnt = %d, lo_cnt = %d", __func__,
             lut_config->lut_pause_hi_cnt,
             lut_config->lut_pause_lo_cnt);
@@ -1315,6 +1316,7 @@ static int _pwm_config_lut(struct pwm_device *pwm,
     dev_info(&pwm->chip->spmi_dev->dev, "%s, ramp: raw = %d, QPNP_GET... = %d", __func__,
             ramp_step_ms,
             lut_config->ramp_step_ms);
+            */
 
 	lut_config->ramp_direction  = !!(flags & PM_PWM_LUT_RAMP_UP);
 	lut_config->pattern_repeat  = !!(flags & PM_PWM_LUT_LOOP);

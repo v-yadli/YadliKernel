@@ -355,6 +355,40 @@ static struct notifier_block msm_mpd_idle_nb = {
 static struct notifier_block msm_mpd_hotplug_nb = {
 	.notifier_call = msm_mpd_hotplug_notifier,
 };
+#undef CPU_ROUND_ROBIN
+
+#ifdef CPU_ROUND_ROBIN
+
+static ktime_t round_robin_timer;
+static int num_of_cpus;
+static int round_robin_shift_counter;
+
+static void round_robin_init()
+{
+    num_of_cpus = num_possible_cpus();
+    round_robin_shift_counter = 0;
+}
+/*
+ * round_robin_tick() updates the round_robin_timer.
+ * if the timeslice is greater than the given threshold,
+ * A round-robin shift will be performed.
+ */
+static void round_robin_tick()
+{
+    if(ktime_to_ns(ktime_sub(ktime_get(), round_robin_timer)) >
+		    2 * NSEC_PER_SEC)
+    {
+        round_robin_shift_counter = (round_robin_shift_counter + 1) % num_of_cpus;
+        round_robin_timer = ktime_get();
+    }
+}
+#endif
+
+#ifdef CPU_ROUND_ROBIN
+#define round_robin_shift(cpu)  (((cpu) + round_robin_shift_counter) % num_of_cpus)
+#else
+#define round_robin_shift(cpu)  (cpu)
+#endif
 
 static int __cpuinit msm_mpd_do_hotplug(void *data)
 {
@@ -368,6 +402,14 @@ static int __cpuinit msm_mpd_do_hotplug(void *data)
 			break;
 
 		msm_mpd.hpupdate = HPUPDATE_IN_PROGRESS;
+
+        /*
+         * Tick the Round-Robin timer so that CPUs serve in turns.
+         */
+#ifdef CPU_ROUND_ROBIN
+        round_robin_tick();
+#endif
+
 		/*
 		 * Bring online any offline cores, then offline any online
 		 * cores.  Whenever a core is off/onlined restart the procedure
@@ -376,7 +418,7 @@ static int __cpuinit msm_mpd_do_hotplug(void *data)
 		 */
 restart:
 		for_each_possible_cpu(cpu) {
-			if ((atomic_read(&msm_mpd.algo_cpu_mask) & (1 << cpu))
+			if ((atomic_read(&msm_mpd.algo_cpu_mask) & (1<<round_robin_shift(cpu)))
 				&& !cpu_online(cpu)) {
 				bring_up_cpu(cpu);
 				if (cpu_online(cpu))
@@ -388,7 +430,7 @@ restart:
 		    100 * NSEC_PER_MSEC)
 			for_each_possible_cpu(cpu)
 				if (!(atomic_read(&msm_mpd.algo_cpu_mask) &
-				      (1 << cpu)) && cpu_online(cpu)) {
+				      (1<<round_robin_shift(cpu))) && cpu_online(cpu)) {
 					bring_down_cpu(cpu);
 					last_down_time = ktime_get();
 					break;
@@ -701,6 +743,7 @@ static struct platform_driver msm_mpd_driver = {
 static int __init msm_mpdecision_init(void)
 {
 	int cpu;
+    return 0;
 	if (!msm_mpd_enabled) {
 		pr_info("Not enabled\n");
 		return 0;
@@ -718,6 +761,9 @@ static int __init msm_mpdecision_init(void)
 		per_cpu(rq_avg_poll_timer, cpu).function
 				= msm_mpd_rq_avg_poll_timer;
 	}
+#ifdef CPU_ROUND_ROBIN
+    round_robin_init();
+#endif
 	mutex_init(&msm_mpd.lock);
 	init_waitqueue_head(&msm_mpd.wait_q);
 	init_waitqueue_head(&msm_mpd.wait_hpq);
